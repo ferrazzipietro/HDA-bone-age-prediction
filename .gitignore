@@ -1,5 +1,9 @@
 data/
 .DS_Store
 data/.DS_Store
+data.nosync/
+data.nosync/.DS_Store
 __*
 Scripts/.ipynb_checkpoints
+Pipfile.lock
+__pycache__/
