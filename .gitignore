@@ -7,3 +7,4 @@ __*
 Scripts/.ipynb_checkpoints
 Pipfile.lock
 __pycache__/
+logs/
