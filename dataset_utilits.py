@@ -2,7 +2,7 @@ import os
 
 
 def data_append(X, age, sex, img_name, age_of_this, sex_of_this, full_path, label):
-    img_name = os.path.join(full_path, label, 'images', img_name)
+    img_name = os.path.join(full_path, label, 'reshaped', img_name)
     X.append(img_name)
     age.append(age_of_this)
     sex.append(sex_of_this)
@@ -21,7 +21,7 @@ def load_imagesPath_ages_sex(full_path, train_truth, validation_truth, test_trut
     labels = ['train','validation', 'test']
 
     for l_idx, label in enumerate(labels):
-        path = os.path.join(full_path, label, 'images')
+        path = os.path.join(full_path, label, 'reshaped')
         image_names = os.listdir(path) 
         print('prendo le image_names da ', path)
         for i, image_name in enumerate(image_names[:only_some_data]):
