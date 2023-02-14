@@ -1,14 +1,16 @@
+import sys
 from functools import reduce, cache
 
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 import tensorflow as tf
 
 
 def prepare_resnet(image):
     size = 244
-    img = np.reshape(image, (299, 299, 1))
+    img = np.reshape(image, (*image.shape, 1))
     img = tf.image.resize(img, (size, size))
     img = tf.concat((img, img, img), axis=2)
     img = tf.cast(img, tf.float32)
@@ -38,7 +40,8 @@ def create_single_input(image, extra_features):
 
 @cache
 def load_model(path):
-    return tf.keras.models.load_model(path)
+    print(f'Loading model {path}')
+    return tf.keras.models.load_model(path, compile=False)
 
 
 def find_valleys(histogram, peaks):
@@ -194,3 +197,54 @@ def process_image(src):
     except ValueError:
         print(f'Error processing image {src}')
         return None
+
+
+def run_pipeline(test_df, case_id):
+    case_id = int(case_id)
+    if case_id not in test_df['Case ID'].unique():
+        print(f'{case_id} not found')
+        return
+
+    unprocessed_model = load_model('./models/unprocessed_50_epochs')
+    processed_model = load_model('./models/base_fixed_50_epochs')
+    features_model = load_model('./models/full_fixed_50_epochs')
+    resnet = load_model('./models/resnet')
+
+    image_path = f'./data/test/images/{case_id}.png'
+    gender = 1 if test_df[test_df['Case ID'] == case_id]['Sex'].item() == 'M' else 0
+    age = test_df[test_df['Case ID'] == case_id]['Ground truth bone age (months)'].item()
+
+    image = cv2.imread(image_path, 0)
+
+    processed_image = process_image(image)
+    unprocessed_image = reshape(image, 299)
+    plt.figure(figsize=(12, 6))
+
+    unprocessed_input = create_single_input(unprocessed_image, gender)
+    processed_input = create_single_input(processed_image, gender)
+    image_features = resnet.predict(prepare_resnet(unprocessed_image))[0]
+    features_input = create_single_input(processed_image, [gender, *process_features(image_features)])
+
+    unprocessed_result = unprocessed_model.predict(unprocessed_input)[0][0] * 200
+    halfprocessed_result = processed_model.predict(unprocessed_input)[0][0] * 200
+    processed_result = processed_model.predict(processed_input)[0][0] * 200
+    features_result = features_model.predict(features_input)[0][0] * 200
+
+    print(f'Real Age:    {age:6.2f} months\n'
+          f'Unprocessed: {unprocessed_result:6.2f} months ({unprocessed_result - age:.2f})\n'
+          f'Processed:   {processed_result:6.2f} months ({processed_result - age:.2f})\n'
+          f'    Mixed:   {halfprocessed_result:6.2f} months ({halfprocessed_result - age:.2f})\n'
+          f'Features:    {features_result:6.2f} months ({features_result - age:.2f})\n'
+          )
+
+
+if __name__ == '__main__':
+    test_df = pd.read_excel('./data/test/test.xlsx')
+    if len(sys.argv) != 2:
+        case_id = input('Enter the case id:')
+        while case_id != '':
+            run_pipeline(test_df, case_id)
+            case_id = input('Enter the case id or press enter to exit:')
+    else:
+        case_id = sys.argv[2]
+        run_pipeline(test_df, case_id)
