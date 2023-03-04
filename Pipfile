@@ -1,0 +1,21 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+mediapipe = "*"
+opencv-python = "*"
+jupyter = "*"
+tensorflow = "*"
+pandas = "*"
+scikit-learn = "*"
+shapely = "*"
+keras = "*"
+openpyxl = "*"
+tqdm = "*"
+
+[dev-packages]
+
+[requires]
+python_version = "3.10"
